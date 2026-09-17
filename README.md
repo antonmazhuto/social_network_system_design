@@ -24,6 +24,7 @@
 - Не всё содержимое поста грузится вместе с лентой. Дополнительные запросы:
   - полный список комментариев — открывается в 10% просмотров;
   - список лайкнувших — открывается в 1% просмотров;
+  - фото в полном размере — открывается в 1% просмотров постов, в среднем 2 фото;
 
 ## Лимиты:
 - У пользователя может быть максимум 1 000 000 подписчиков;
@@ -34,6 +35,10 @@
 - Пост может содержать максимум 10 комментариев, в среднем 7.6;
 - Описание поста — до 500 байт (кириллица UTF-8: 2 байта на символ);
 - Текст комментария — до 120 байт;
+- При загрузке фото генерируются три версии:
+  - миниатюра 320px  — ~30 KB
+  - превью 1080px    — ~150 KB
+  - оригинал         — до 10 MB, в среднем 3 MB
 
 
 ## Сезонность и пики:
@@ -63,7 +68,7 @@ RPS(write) peak = RPSavg * Пиковый множитель = 7.72 * 6 = 46
 RPS(read) avg = 10 000 000 * 100 /86400 = 11 574
 RPS(read) peak = 11 574 * 4 = 46 296
 
-Система Read-Heavy. Запросов на чтение почти в 1000 раз больше, чем на запись.
+Система Read-Heavy. Запросов на чтение почти в 1500 раз больше, чем на запись.
 
 
 **Likes:**
@@ -122,9 +127,23 @@ Traffic avg = 7.72 * 650bytes = 5 018 bytes/s = 4.9KB/s
 Traffic peak = 4.9KB/s * 6 = 29,4KB/s
 
 Media(READ):
+В ленте грузим превью (1 фото на 1 пост, ~150 KB), оригиналы только при открытии поста
+
 Пиковый множитель на чтение: 2 (сезонный) × 2 (суточный) = ×4
-Traffic avg = 5 * 3MB * 11 574 * 10 =1 736 100 MB/s = 1.65TB/s
-Traffic peak = 46 296 * 150MB =  6,6 TB/s
+
+
+Превью:
+Traffic avg = 11 574 * 10 * 150 KB = 17.4 GB/s
+Traffic peak = 17.4 * 4 = 69.4 GB/s
+
+Оригиналы (1% просмотров постов, 2 фото по 3 MB):
+Traffic avg = 0.01 * 3MB * 2 * 11 574 * 10 =6 944,4 МБ/s = 6.8 GB/s
+Traffic peak = 6.8 * 4 =  27 GB/s
+
+Итого media read peak = 69.4 + 27.6 = 97 GB/s (~780 Гбит/с)
+
+Отдаётся через CDN, cache hit ~95%.
+На origin приходится ~5%: peak ≈ 4.9 GB/s (~39 Гбит/с)
 
 Media(Write):
 Пиковый множитель на загрузку: 3 (сезонный) × 2 (суточный) = ×6
@@ -162,6 +181,23 @@ Traffic avg = 11.57 * 16 bytes = 185 bytes/s
 Traffic peak = 46.28 * 16 bytes = 741 bytes/s
 
 
+Like:
+- id (uuid) 16 bytes
+- user_id (uuid) 16 bytes
+- post_id (uuid) 16 bytes
+- created_at (timestamp) 8 bytes
+AVG размер = 56 bytes
+
+Likes:
+Write: Пиковый множитель: 2 (сезонный) × 2 (суточный) = ×4
+Traffic avg = 578.7 * 56 B = 32.4 KB/s
+Traffic peak = 32.44 = 129.6 KB/s
+
+Read (список лайкнувших, 1% запросов ленты, ~75 лайков в выдаче):
+
+Traffic avg = 115.7 * 56 B * 75 = 486 KB/s 
+Traffic peak = 486 * 4 = 1.9 MB/s
+
 Connections = 10 000 000 * 0.1 = 1 000 000
 
 
@@ -193,3 +229,56 @@ Connections = 10 000 000 * 0.1 = 1 000 000
 ### Подписки (Subscriptions)
 * `Subscribe(params...)`
 * `Unsubscribe(params...)`
+
+
+## Оценка потребления дисков для хранения и обработки всех этих данных приложения на 1 год
+
+### Метаданные
+
+Трафик на запись(avg):
+- posts - 4.9 KB/s
+- comments - 7.75 KB/s
+- likes - 32.4 KB/s
+- subscriptions - 185 bytes/s = 0.2 KB/s
+
+Итого: ~45 KB/s
+
+```Capacity = 45 KB/s * 86 400 * 365 = 1 419 120 000 KB = 1.43 TB/год```
+
+Трафик на чтение (peak):
+- посты 287 MB/s
+- комментарии 5.4 MB/s
+- лайки 1.9 MB/s
+
+Итого ~294 MB/s
+
+
+IOPS(peak):
+ - read = 46 296(posts) + 4 628(comments) + 462(likes) = 51 400
+ - write =  46(posts) + 198(comments) + 2 314(likes) + 46(subscriptions) = 2600
+
+ Итого: ~54 000
+
+#### HDD (2 TB, 100 IOPS, 100 MB/s):
+```
+Disks_for_capacity = capacity / disk_capacity =  1.43 TB / 2 TB = 0.7 => 1
+Disks_for_throughput = traffic_per_second / disk_throughput = 294 MB/s / 100 MB/s = 2.9 → 3
+Disks_for_iops = iops / disk_iops = 54 000 / 100 = 540 → 540
+Disks = max(1, 3, 540) = 540
+```
+
+#### SSD SATA (10 TB, 1 000 IOPS, 500 MB/s):
+```
+Disks_for_capacity   = 1.43 TB / 10 TB     = 0.14 → 1
+Disks_for_throughput = 294 MB/s / 500 MB/s = 0.6  → 1
+Disks_for_iops       = 54 000 / 1 000      = 54   → 54
+Disks = max(1, 1, 54) = 54
+```
+
+#### SSD nVMe (4 TB, 10 000 IOPS, 3 GB/s):
+```
+Disks_for_capacity   = 1.43 TB / 4 TB      = 0.36 → 1
+Disks_for_throughput = 294 MB/s / 3 GB/s   = 0.1  → 1
+Disks_for_iops       = 54 000 / 10 000     = 5.4  → 6
+Disks = max(1, 1, 6) = 6
+```
