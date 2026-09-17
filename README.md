@@ -163,3 +163,33 @@ Traffic peak = 46.28 * 16 bytes = 741 bytes/s
 
 
 Connections = 10 000 000 * 0.1 = 1 000 000
+
+
+
+## API:
+
+### Посты (Posts)
+* `GetPost(params...)`
+* `CreatePost(params...)`
+* `UpdatePost(params...)`
+* `DeletePost(params...)`
+* `ListPosts(params...)`
+* `ListPostsByPlace(params...)`
+
+### Места (Places)
+* `SearchPlaces(params...)`
+
+### Лайки (Likes)
+* `ToggleLike(params...)`
+* `ListLikes(params...)`
+
+### Комментарии (Comments)
+* `GetComment(params...)`
+* `CreateComment(params...)`
+* `UpdateComment(params...)`
+* `DeleteComment(params...)`
+* `ListComments(params...)`
+
+### Подписки (Subscriptions)
+* `Subscribe(params...)`
+* `Unsubscribe(params...)`
