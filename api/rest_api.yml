@@ -82,8 +82,27 @@ paths:
           description: Not found
         '500':
           description: Server error
-
-  /post/{id}:
+    post:
+      tags:
+        - Posts
+      summary: Create a new post
+      description: Publishes a new post with a description, geolocated place binding, and pre-uploaded photos.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePostPayload'
+      responses:
+        '201':
+          description: Post successfully created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Post'
+        '500':
+          description: Server error
+  /posts/{id}:
     get:
       tags:
         - Posts
@@ -171,27 +190,6 @@ paths:
           description: Post not found
         '500':
           description: Server error
-  /post:
-    post:
-      tags:
-        - Posts
-      summary: Create a new post
-      description: Publishes a new post with a description, geolocated place binding, and pre-uploaded photos.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreatePostPayload'
-      responses:
-        '201':
-          description: Post successfully created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Post'
-        '500':
-          description: Server error
   /places:
     get:
       tags:
@@ -237,122 +235,7 @@ paths:
           description: Bad request. Missing required query parameter.
         '500':
           description: Server error
-  /comment/{id}:
-    get:
-      tags:
-        - Comments
-      summary: Get comment by id
-      description: Returns a single comment entity by its unique identifier.
-      parameters:
-        - name: id
-          in: path
-          required: true
-          description: Comment ID
-          schema:
-            type: string
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Comment'
-        '404':
-          description: Comment not found
-        '500':
-          description: Server error
-    post:
-      tags:
-        - Comments
-      summary: Create a comment on a post
-      description: Adds a new comment to the post. Limited to 10 comments per post.
-      parameters:
-        - name: id
-          in: path
-          required: true
-          description: Id of the post
-          schema:
-            type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateCommentPayload'
-      responses:
-        '201':
-          description: Comment successfully created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Comment'
-        '404':
-          description: Post not found
-        '409':
-          description: Comment limit reached for this post
-        '500':
-          description: Server error
-    put:
-      tags:
-        - Comments
-      summary: Update comment text
-      description: Updates the text payload
-      parameters:
-        - name: id
-          in: path
-          required: true
-          description: Comment ID
-          schema:
-            type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateCommentPayload'
-      responses:
-        '200':
-          description: Comment successfully updated
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Comment'
-        '403':
-          description: Forbidden. User is not the author of this comment.
-        '404':
-          description: Comment not found
-        '500':
-          description: Server error
-
-    delete:
-      tags:
-        - Comments
-      summary: Delete comment by id
-      description: Deletes an existing comment. Only the author or post owner can perform this action.
-      parameters:
-        - name: id
-          in: path
-          required: true
-          description: Comment ID
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Comment successfully deleted
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                    example: "success"
-        '403':
-          description: Forbidden
-        '404':
-          description: Comment not found
-
-  /post/{id}/comments:
+  /posts/{id}/comments:
     get:
       tags:
         - Comments
@@ -398,15 +281,49 @@ paths:
           description: Post not found
         '500':
           description: Server error
-  /post/{id}/likes:
     post:
       tags:
-        - Likes
-      summary: Toggle like on a post
+        - Comments
+      summary: Create a comment on a post
+      description: Adds a new comment to the post. Limited to 10 comments per post.
       parameters:
         - name: id
           in: path
           required: true
+          description: Id of the post
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCommentPayload'
+      responses:
+        '201':
+          description: Comment successfully created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Comment'
+        '404':
+          description: Post not found
+        '409':
+          description: Comment limit reached for this post
+        '500':
+          description: Server error
+
+  /comments/{id}:
+    get:
+      tags:
+        - Comments
+      summary: Get comment by id
+      description: Returns a single comment entity by its unique identifier.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Comment ID
           schema:
             type: string
       responses:
@@ -415,17 +332,70 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  likes_count:
-                    type: integer
-                  is_liked:
-                    type: boolean
+                $ref: '#/components/schemas/Comment'
         '404':
-          description: Not found
+          description: Comment not found
         '500':
           description: Server error
-
+    put:
+      tags:
+        - Comments
+      summary: Update comment text
+      description: Updates the text payload
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Comment ID
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCommentPayload'
+      responses:
+        '200':
+          description: Comment successfully updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Comment'
+        '403':
+          description: Forbidden. User is not the author of this comment.
+        '404':
+          description: Comment not found
+        '500':
+          description: Server error
+    delete:
+      tags:
+        - Comments
+      summary: Delete comment by id
+      description: Deletes an existing comment. Only the author or post owner can perform this action.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Comment ID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Comment successfully deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "success"
+        '403':
+          description: Forbidden
+        '404':
+          description: Comment not found
+  /posts/{id}/likes:
     get:
       tags:
         - Likes
@@ -464,8 +434,64 @@ paths:
           description: Not found
         '500':
           description: Server error
-
-  /user/{id}/subscribe:
+  /posts/{id}/like:
+    put:
+      tags:
+        - Likes
+      summary: Like a post
+      description: Idempotent. Repeated calls keep the post liked.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  likes_count:
+                    type: integer
+                  is_liked:
+                    type: boolean
+                    example: true
+        '404':
+          description: Not found
+        '500':
+          description: Server error
+    delete:
+      tags:
+        - Likes
+      summary: Remove like from a post
+      description: Idempotent. Repeated calls keep the post unliked.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  likes_count:
+                    type: integer
+                  is_liked:
+                    type: boolean
+                    example: false
+        '404':
+          description: Not found
+        '500':
+          description: Server error
+  /users/{id}/subscription:
     post:
       tags:
         - Subscriptions
@@ -489,7 +515,6 @@ paths:
           description: Bad request
         '500':
           description: Server error
-
     delete:
       tags:
         - Subscriptions
