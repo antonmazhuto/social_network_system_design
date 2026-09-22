@@ -47,9 +47,14 @@ Table photos {
 
 Table places {
   id uuid [primary key]
-  name varchar
+  name varchar [not null]
   region varchar
+  radius integer [not null]
+  location geography(Point, 4326) [not null]
   posts_count integer [not null, default: 0]
+  indexes {
+    location [type: gist]
+  }
 }
 
 Table comments {
