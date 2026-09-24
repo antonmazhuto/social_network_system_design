@@ -1,0 +1,39 @@
+@startuml container
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+Person(traveler, "Traveler", "Publishes posts and reads the feed")
+System_Ext(cdn, "CDN", "Caches and serves photos")
+
+System_Boundary(social_network, "Social Network For Travelers") {
+    Container(client, "Client App", "iOS / Android / React", "Publishing posts, feed, places")
+    Container(gateway, "API Gateway", "Routing, authentication, rate limiting")
+
+    Container(content_service, "Content Service", "Node.js", "Posts, feed, places, subscriptions")
+    Container(reaction_service, "Reaction Service", "Node.js", "Likes and comments")
+    Container(media_service, "Media Service", "Node.js", "Accepts uploads, stores originals, issues photo URLs")
+    Container(photo_processor, "Photo Processor", "Node.js", "Generates 320/1080/2048px AVIF versions")
+
+    ContainerDb(postgres, "PostgreSQL", "PostgreSQL 16 + PostGIS", "Posts, comments, likes, users, places")
+    ContainerDb(media_storage, "Media Storage", "S3-compatible")
+    ContainerQueue(kafka, "Photo Processing Queue", "Kafka", "Photo processing tasks")
+}
+
+Rel(traveler, client, "Uses", "HTTPS")
+Rel(traveler, cdn, "Downloads photos", "HTTPS")
+Rel(client, gateway, "API requests", "JSON/HTTPS")
+
+Rel(gateway, content_service, "Posts, feed, place search", "JSON/HTTP")
+Rel(gateway, reaction_service, "Likes and comments", "JSON/HTTP")
+Rel(gateway, media_service, "Photo uploads", "JSON/HTTP")
+
+Rel(content_service, postgres, "Reads and writes posts, places, subscriptions", "SQL")
+Rel(reaction_service, postgres, "Reads and writes likes and comments", "SQL")
+
+Rel(media_service, media_storage, "Stores originals", "S3 API")
+Rel(media_service, postgres, "Writes photo metadata", "SQL")
+Rel(media_service, kafka, "Publishes processing tasks", "Kafka protocol")
+Rel(kafka, photo_processor, "Delivers tasks", "Kafka protocol")
+Rel(photo_processor, media_storage, "Reads originals, writes AVIF versions", "S3 API")
+Rel(cdn, media_storage, "Fetches a version from the origin on a cache miss", "HTTPS")
+
+@enduml
