@@ -1,0 +1,12 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+
+Person(traveler, "Traveler")
+System(social_network, "Social Network For Travelers", "Posting travel updates, feed, places")
+System_Ext(cdn, "CDN", "Caches and serves photos")
+
+Rel(traveler, social_network, "Publishes posts and reads the feed", "HTTPS")
+Rel(social_network, cdn, "pre-loads photos of popular authors (push)", "HTTPS")
+Rel(cdn, social_network, "fetches the file from the origin on a cache miss (pull)", "HTTPS")
+Rel(traveler, cdn, "Downloads photos", "HTTPS")
+@enduml

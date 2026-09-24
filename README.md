@@ -376,3 +376,22 @@ SSD NVMe: max(3 650/4 → 913,    695/3 000 → 1, 230/10 000 → 1) = 913
 
 Оценка без репликации и без индексов: объём метаданных с индексами ≈ ×2,
 итоговое число дисков умножается на replication factor.
+
+
+## Архитектура
+
+Для описания архитектуры используется [C4 model](https://c4model.com/):
+первый уровень показывает систему в окружении пользователей и внешних систем,
+второй — из каких контейнеров она состоит и как между ними движутся данные.
+
+**Level 1. System context diagram**
+
+<p align="center">
+  <img src="images/diagrams/context.svg" />
+</p>
+
+**Level 2. Container diagram**
+
+<p align="center">
+  <img src="images/diagrams/container.svg" />
+</p>
